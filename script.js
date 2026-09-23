@@ -22,18 +22,97 @@ e.textContent='';pay({n:$('#nm').value.trim().toUpperCase(),o:sel.o,d:sel.d,c:cx
 function pay(t){const ov=$('#ov'),m=$('#mod');ov.classList.remove('hide');
 m.innerHTML='<div class="sp"></div><b>Processando pagamento…</b><p class="s">Simulação, nenhuma cobrança real</p>';
 setTimeout(()=>{m.innerHTML='<svg class="ck" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30"/><path d="M18 33l9 9 19-20"/></svg><b>Pagamento aprovado</b><p class="s">R$ 0,00 · simulado</p>'},1800);
-setTimeout(()=>{ov.classList.add('hide');t.f='LDR '+(1000+Math.floor(Math.random()*8999));t.g='ABCDEFGH'[Math.random()*8|0]+(1+Math.random()*30|0);t.s=(1+Math.random()*32|0)+'ABCDEF'[Math.random()*6|0];t.id=Date.now();
+setTimeout(()=>{ov.classList.add('hide');document.querySelector('#formOverlay')?.classList.add('hide');t.f='LDR '+(1000+Math.floor(Math.random()*8999));t.g='ABCDEFGH'[Math.random()*8|0]+(1+Math.random()*30|0);t.s=(1+Math.random()*32|0)+'ABCDEF'[Math.random()*6|0];t.id=Date.now();
+const legCount=t.c?2:1;
+t.gs=Array.from({length:legCount},()=> 'ABCDEFGH'[Math.random()*8|0]+(1+Math.random()*30|0));
+t.ss=Array.from({length:legCount},()=> (1+Math.random()*32|0)+'ABCDEF'[Math.random()*6|0]);
+t.fs=Array.from({length:legCount},()=> 'LDR '+(1000+Math.floor(Math.random()*8999)));
 trips.unshift(t);save();render();$('#form').classList.add('hide');$('#passes').scrollIntoView({behavior:'smooth'})},3600)}
 const fd=d=>{const[y,m,x]=d.split('-');return x+'/'+m+'/'+y};
 function render(){const P=$('#passes');P.innerHTML='';trips.forEach(t=>{
 const legs=t.c?[[t.o,t.c,t.t],[t.c,t.d,t.t2]]:[[t.o,t.d,t.t]];
-const qd='SOUVENIR-NAO-VALIDO|'+t.n+'|'+legs.map(l=>l[0][0]+'>'+l[1][0]+' '+l[2]).join(',')+'|'+t.dt+'|'+t.f+'|R$0,00';
+legs.forEach((l,i)=>{
+const flight=(t.fs&&t.fs[i])||t.f||('LDR '+(1000+Math.floor(Math.random()*8999)));
+const gate=(t.gs&&t.gs[i])||t.g||('ABCDEFGH'[i%8]+(1+i));
+const seat=(t.ss&&t.ss[i])||t.s||((1+i)+'ABC');
+const qd='SOUVENIR-NAO-VALIDO|'+t.n+'|'+l[0][0]+'>'+l[1][0]+' '+l[2]+'|'+t.dt+'|'+flight+'|R$0,00';
 const q=qrcode(0,'M');q.addData(qd);q.make();
 const el=document.createElement('div');el.className='pass';
-el.innerHTML='<div class="ph"><span>✈ CARTÃO DE EMBARQUE</span><small>'+t.f+'</small></div><div class="pb"><small style="color:var(--mu)">PASSAGEIRO</small><div style="font-weight:800;font-size:18px">'+t.n+'</div>'+
-legs.map(l=>'<div class="leg"><div class="route"><div><div class="code">'+l[0][0]+'</div><div class="city">'+l[0][2]+'</div></div><div class="mid">✈<br><small style="font-size:13px;color:var(--tx);font-weight:700">'+l[2]+'</small></div><div style="text-align:right"><div class="code">'+l[1][0]+'</div><div class="city" style="margin-left:auto">'+l[1][2]+'</div></div></div></div>').join('')+
-'<div class="g"><div><span>Data</span><b>'+fd(t.dt)+'</b></div><div><span>Portão</span><b>'+t.g+'</b></div><div><span>Assento</span><b>'+t.s+'</b></div><div><span>Tipo</span><b>'+(t.c?'Conexão':'Direto')+'</b></div></div></div>'+
-'<div class="qr">'+q.createSvgTag(4,0)+'</div><div class="wm">SOUVENIR · NÃO VÁLIDO PARA EMBARQUE · R$ 0,00</div><div class="stamp">NÃO VÁLIDO</div>'+
+el.innerHTML='<div class="ph"><span>✈ CARTÃO DE EMBARQUE</span><small>'+flight+' · '+(legs.length>1?(' '+(i+1)+' de '+legs.length):'VOO DIRETO')+'</small></div><div class="pb"><small style="color:var(--mu)">PASSAGEIRO</small><div style="font-weight:800;font-size:18px">'+t.n+'</div>'+ 
+'<div class="leg"><div class="route"><div><div class="code">'+l[0][0]+'</div><div class="city">'+l[0][2]+'</div></div><div class="mid">✈<br><small style="font-size:13px;color:var(--tx);font-weight:700">'+l[2]+'</small></div><div style="text-align:right"><div class="code">'+l[1][0]+'</div><div class="city" style="margin-left:auto">'+l[1][2]+'</div></div></div></div>'+ 
+'<div class="g"><div><span>Data</span><b>'+fd(t.dt)+'</b></div><div><span>Portão</span><b>'+gate+'</b></div><div><span>Assento</span><b>'+seat+'</b></div><div><span>Tipo</span><b>'+(legs.length>1?'Conexão':'Direto')+'</b></div></div></div>'+ 
+'<div class="qr">'+q.createSvgTag(4,0)+'</div><div class="wm">SOUVENIR · NÃO VÁLIDO PARA EMBARQUE · R$ 0,00</div><div class="stamp">NÃO VÁLIDO</div>'+ 
 '<div style="text-align:center;padding-bottom:12px"><button class="x">remover</button></div>';
-el.querySelector('.x').onclick=()=>{trips=trips.filter(z=>z.id!=t.id);save();render()};P.appendChild(el)})}
+el.querySelector('.x').onclick=()=>{trips=trips.filter(z=>z.id!=t.id);save();render()};P.appendChild(el);
+});
+});}
+
 render();
+
+
+/* ===== Interface moderna de destinos ===== */
+const formOverlay = document.querySelector('#formOverlay');
+const closeForm = document.querySelector('#closeForm');
+const destinationSearch = document.querySelector('#destinationSearch');
+const destinationCards = [...document.querySelectorAll('.destination-card')];
+const destinationEmpty = document.querySelector('#destinationEmpty');
+const themeBtn = document.querySelector('#themeBtn');
+
+function openTripForm(){
+  formOverlay?.classList.remove('hide');
+  $('#form')?.classList.remove('hide');
+  const dt=$('#dt');
+  if(dt) dt.min=new Date().toISOString().slice(0,10);
+  setTimeout(()=>$('#nm')?.focus(),120);
+}
+function closeTripForm(){
+  formOverlay?.classList.add('hide');
+  $('#form')?.classList.add('hide');
+}
+
+$('#add').onclick=openTripForm;
+closeForm?.addEventListener('click',closeTripForm);
+formOverlay?.addEventListener('click',e=>{if(e.target===formOverlay)closeTripForm()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTripForm()});
+
+const destinationAirportCodes={
+  Paris:'CDG', Miami:'MIA', 'São Paulo':'GRU', Orlando:'MCO', Lisboa:'LIS', 'Rio de Janeiro':'GIG'
+};
+
+destinationCards.forEach(card=>card.addEventListener('click',()=>{
+  const name=card.dataset.destination;
+  const code=card.dataset.code || destinationAirportCodes[name];
+  const airport=idx.find(x=>x.a[0]===code)?.a;
+  openTripForm();
+  if(airport){
+    sel.d=airport;
+    $('#d').value=airport[0]+' – '+airport[2]+' ('+airport[3]+')';
+  }
+  $('#nm')?.focus();
+}));
+
+function filterDestinations(value){
+  const q=norm(value.trim());
+  let visible=0;
+  destinationCards.forEach(card=>{
+    const match=!q || norm(card.dataset.destination+' '+card.innerText).includes(q);
+    card.classList.toggle('hide',!match);
+    if(match) visible++;
+  });
+  destinationEmpty?.classList.toggle('hide',visible!==0);
+}
+destinationSearch?.addEventListener('input',e=>filterDestinations(e.target.value));
+
+// Atalhos laterais para as seções principais.
+document.querySelectorAll('.nav-item[data-scroll]').forEach(btn=>btn.addEventListener('click',()=>{
+  const target=btn.dataset.scroll==='top'?'#top':btn.dataset.scroll==='destinos'?'#destinos':'#viagens';
+  document.querySelector(target)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-item[data-scroll]').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+}));
+
+// Tema claro/escuro sem alterar o simulador.
+themeBtn?.addEventListener('click',()=>{
+  const root=document.documentElement;
+  root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';
+});
